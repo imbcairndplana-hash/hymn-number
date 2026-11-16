@@ -71,6 +71,9 @@
   .tt{display:block;font-size:13.5px;word-break:keep-all;overflow-wrap:anywhere}
   .mid{display:flex;align-items:center;padding:0 3px;color:var(--gold-soft);font-size:13px;background:var(--card)}
   .back{display:inline-block;background:none;color:var(--gold);font-size:13.5px;font-weight:400;padding:0 0 6px;border-radius:0;letter-spacing:0}
+  .ext{display:block;margin-top:12px;padding:10px 14px;border:1px solid var(--gold-soft);border-radius:12px;text-decoration:none;color:var(--ink);background:var(--card)}
+  .ext-t{display:block;color:var(--gold);font-weight:600;font-size:15px}
+  .ext-s{display:block;color:var(--muted);font-size:12.5px}
   mark{background:none;color:var(--gold);font-weight:700}
   @media (max-width:600px){.sub{display:none}.big{font-size:32px}}
 </style>
@@ -81,9 +84,9 @@
   <hr class="rule">
   <p class="sub">통일찬송가(1983) 장 번호나 제목을 넣으면 새찬송가(21세기찬송가, 2006) 장 번호를 알려 드립니다.</p>
 
-  <label class="lbl" for="num">통일찬송가 장 번호(1~558) 또는 제목 일부</label>
+  <label class="lbl" for="num">통일찬송가 장 번호(1~558), 제목 또는 가사 일부</label>
   <form id="f" autocomplete="off">
-    <input id="num" type="search" enterkeyhint="search" placeholder="예: 405 / 죄인 살리신" autofocus>
+    <input id="num" type="search" enterkeyhint="search" placeholder="예: 405 / 죄인 살리신 / 광명을 얻었네" autofocus>
     <button type="submit">찾기</button>
   </form>
 
@@ -97,6 +100,7 @@
       <li>대조표 ②: KCM 「구찬송가 새찬송가 목록 비교」 엑셀 3종 (kcm.kr, 2011-12-16).</li>
       <li>통일찬송가 제목 목록: 리얼마스터몰 자료실 「통일찬송가(번호순).pdf」 (2017.01).</li>
       <li>대조표 ①·②가 일치하면 채택. 불일치하면 통일 제목과 공회 새찬송가 제목이 맞는 쪽을 채택. 그래도 정할 수 없으면 결과를 내지 않음.</li>
+      <li>가사 검색은 이 앱에 가사를 담지 않고(저작권), 한국찬송가공회 홈페이지 검색으로 연결함. 공회 검색 결과는 새찬송가 기준임.</li>
       <li>결과: 대응 478곡 · 삭제 75곡 · 미확정 5곡(통일 92, 548, 550, 555, 556).</li>
     </ul>
   </details>
@@ -111,18 +115,28 @@ function hl(t,q){ // 공백 무시 일치 부분 강조
   const k=flat.indexOf(q);if(k<0)return esc(t);
   const a=map[k],b=map[k+q.length-1]+1;return esc(t.slice(0,a))+'<mark>'+esc(t.slice(a,b))+'</mark>'+esc(t.slice(b));
 }
+function lyricUrl(kw){
+  const b=new TextEncoder().encode(kw).length;
+  const ser=`a:2:{s:12:"keyword_type";s:3:"all";s:7:"keyword";s:${b}:"${kw}";}`;
+  const b64=btoa(String.fromCharCode(...new TextEncoder().encode(ser)));
+  return 'https://hymnkorea.org/105/?q='+encodeURIComponent(b64);
+}
+function lyricLink(raw){
+  const kw=String(raw).trim().replace(/\s+/g,' ').replace(/["]/g,'');
+  return `<a class="ext" href="${lyricUrl(kw)}" target="_blank" rel="noopener"><span class="ext-t">가사로 찾기 ↗</span><span class="ext-s">공회 홈페이지에서 「${esc(kw)}」 검색 · 결과는 새찬송가 번호</span></a>`;
+}
 function search(raw){
   const q=norm(raw);
   if(q.length<2){out.innerHTML='<span class="hint">제목은 두 글자 이상 입력하세요.</span>';return}
   const hits=[];
   for(const k in D){const e=D[k];const io=norm(e.o).includes(q),it=e.t&&norm(e.t).includes(q);if(io||it)hits.push([+k,e])}
-  if(!hits.length){out.innerHTML='<span class="hint">맞는 제목이 없습니다. 띄어쓰기는 무시하고 찾습니다. 다른 낱말로 찾아 보세요.</span>';return}
+  if(!hits.length){out.innerHTML='<span class="hint">맞는 제목이 없습니다. 가사 일부라면 아래에서 찾아 보세요.</span>'+lyricLink(raw);return}
   out.innerHTML=`<div class="cnt">${hits.length}곡 찾음 · 누르면 자세히</div><ul class="list">`+hits.map(([n,e])=>{
     let right;
     if(e.s==='m')right=`<span class="side new"><span class="lab">새찬송가</span><span class="no">${e.n}장</span><span class="tt">${hl(e.t,q)}</span></span>`;
     else if(e.s==='d')right='<span class="side new del"><span class="lab">새찬송가</span><span class="no">없음</span><span class="tt">삭제된 곡</span></span>';
     else right='<span class="side new unk"><span class="lab">새찬송가</span><span class="no">미확정</span><span class="tt">출처 간 불일치</span></span>';
-    return `<li><button type="button" class="pair" data-n="${n}"><span class="side old"><span class="lab">통일</span><span class="no">${n}장</span><span class="tt">${hl(e.o,q)}</span></span><span class="mid">→</span>${right}</button></li>`}).join('')+'</ul>';
+    return `<li><button type="button" class="pair" data-n="${n}"><span class="side old"><span class="lab">통일</span><span class="no">${n}장</span><span class="tt">${hl(e.o,q)}</span></span><span class="mid">→</span>${right}</button></li>`}).join('')+'</ul>'+lyricLink(raw);
 }
 out.addEventListener('click',ev=>{
   if(ev.target.closest('.back')){history.back();return}
