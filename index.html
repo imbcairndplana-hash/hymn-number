@@ -54,6 +54,7 @@
   .side.new.unk .no{color:var(--warn);font-size:16px}
   .tt{display:block;font-size:14px;word-break:keep-all;overflow-wrap:anywhere}
   .mid{display:flex;align-items:center;padding:0 2px;color:var(--muted);font-size:14px;background:var(--card)}
+  .back{display:inline-block;background:none;color:var(--accent);font-size:14px;padding:0 0 6px;border-radius:0}
   mark{background:none;color:var(--accent);font-weight:700}
   @media (max-width:600px){.sub{display:none}main{padding-top:8px}h1{margin-bottom:6px}.big{font-size:30px}}
 </style>
@@ -106,14 +107,22 @@ function search(raw){
     else right='<span class="side new unk"><span class="lab">새찬송가</span><span class="no">미확정</span><span class="tt">출처 간 불일치</span></span>';
     return `<li><button type="button" class="pair" data-n="${n}"><span class="side old"><span class="lab">통일</span><span class="no">${n}장</span><span class="tt">${hl(e.o,q)}</span></span><span class="mid">→</span>${right}</button></li>`}).join('')+'</ul>';
 }
-out.addEventListener('click',ev=>{const b=ev.target.closest('button[data-n]');if(b){inp.value=b.dataset.n;show(b.dataset.n)}});
+out.addEventListener('click',ev=>{
+  if(ev.target.closest('.back')){history.back();return}
+  const b=ev.target.closest('button[data-n]');if(!b)return;
+  history.pushState({d:+b.dataset.n},'');detail(+b.dataset.n,true);inp.blur();window.scrollTo(0,0);
+});
+addEventListener('popstate',ev=>{if(ev.state&&ev.state.d)detail(ev.state.d,true);else show(inp.value)});
 function show(v){
   v=String(v).trim();
   if(!v){out.innerHTML='<span class="hint">번호나 제목을 입력하세요.</span>';return}
   if(!/^[0-9]+$/.test(v)){search(v);return}
-  const n=+v,e=D[n];
+  detail(+v,false);
+}
+function detail(n,fromList){
+  const e=D[n];
   if(!e){out.innerHTML='<span class="hint">통일찬송가는 1~558장입니다.</span>';return}
-  const head=`<div class="from">통일 ${n}장 「${esc(e.o)}」</div>`;
+  const head=(fromList?'<button type="button" class="back">← 검색 결과로</button>':'')+`<div class="from">통일 ${n}장 「${esc(e.o)}」</div>`;
   if(e.s==='m'){
     out.innerHTML=head+`<div class="row"><span class="arrow">새찬송가</span><span class="big">${e.n}장</span></div><div class="title">${esc(e.t)}</div>`;
   }else if(e.s==='d'){
