@@ -39,13 +39,21 @@
   details ul{padding-left:18px;margin:8px 0}
   details li{margin:3px 0}
   a{color:var(--accent)}
-  .cnt{font-size:13px;color:var(--muted);margin-bottom:4px}
-  .list{list-style:none;margin:0;padding:0}
-  .list li{border-top:1px solid var(--line)}
-  .list li:first-child{border-top:0}
-  .list button{display:block;width:100%;text-align:left;background:none;color:var(--ink);font-size:15px;padding:8px 2px;border-radius:0;line-height:1.4}
-  .list .r{display:block;font-size:14px;color:var(--ok)}
-  .list .r.del{color:var(--gray)}.list .r.unk{color:var(--warn)}
+  .cnt{font-size:13px;color:var(--muted);margin-bottom:6px}
+  .list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
+  .pair{display:grid;grid-template-columns:1fr auto 1fr;align-items:stretch;width:100%;padding:0;background:var(--bg);color:var(--ink);border:1px solid var(--line);border-radius:10px;text-align:left;font-size:15px;line-height:1.35;overflow:hidden}
+  .side{padding:8px 10px;min-width:0}
+  .side.new{background:color-mix(in srgb,var(--ok) 9%,var(--card))}
+  .side.new.del{background:color-mix(in srgb,var(--gray) 9%,var(--card))}
+  .side.new.unk{background:color-mix(in srgb,var(--warn) 10%,var(--card))}
+  .lab{display:block;font-size:11px;color:var(--muted);letter-spacing:.02em}
+  .no{display:block;font-size:20px;font-weight:700}
+  .side.old .no{color:var(--ink)}
+  .side.new .no{color:var(--ok)}
+  .side.new.del .no{color:var(--gray);font-size:16px}
+  .side.new.unk .no{color:var(--warn);font-size:16px}
+  .tt{display:block;font-size:14px;word-break:keep-all;overflow-wrap:anywhere}
+  .mid{display:flex;align-items:center;padding:0 2px;color:var(--muted);font-size:14px;background:var(--card)}
   mark{background:none;color:var(--accent);font-weight:700}
   @media (max-width:600px){.sub{display:none}main{padding-top:8px}h1{margin-bottom:6px}.big{font-size:30px}}
 </style>
@@ -91,11 +99,12 @@ function search(raw){
   const hits=[];
   for(const k in D){const e=D[k];const io=norm(e.o).includes(q),it=e.t&&norm(e.t).includes(q);if(io||it)hits.push([+k,e])}
   if(!hits.length){out.innerHTML='<span class="hint">맞는 제목이 없습니다. 띄어쓰기는 무시하고 찾습니다. 다른 낱말로 찾아 보세요.</span>';return}
-  out.innerHTML=`<div class="cnt">${hits.length}곡 찾음</div><ul class="list">`+hits.map(([n,e])=>{
-    let r;if(e.s==='m')r=`<span class="r">→ 새찬송가 ${e.n}장 「${hl(e.t,q)}」</span>`;
-    else if(e.s==='d')r='<span class="r del">→ 새찬송가에 없음(삭제)</span>';
-    else r='<span class="r unk">→ 확정하지 못함</span>';
-    return `<li><button type="button" data-n="${n}">통일 ${n}장 「${hl(e.o,q)}」${r}</button></li>`}).join('')+'</ul>';
+  out.innerHTML=`<div class="cnt">${hits.length}곡 찾음 · 누르면 자세히</div><ul class="list">`+hits.map(([n,e])=>{
+    let right;
+    if(e.s==='m')right=`<span class="side new"><span class="lab">새찬송가</span><span class="no">${e.n}장</span><span class="tt">${hl(e.t,q)}</span></span>`;
+    else if(e.s==='d')right='<span class="side new del"><span class="lab">새찬송가</span><span class="no">없음</span><span class="tt">삭제된 곡</span></span>';
+    else right='<span class="side new unk"><span class="lab">새찬송가</span><span class="no">미확정</span><span class="tt">출처 간 불일치</span></span>';
+    return `<li><button type="button" class="pair" data-n="${n}"><span class="side old"><span class="lab">통일</span><span class="no">${n}장</span><span class="tt">${hl(e.o,q)}</span></span><span class="mid">→</span>${right}</button></li>`}).join('')+'</ul>';
 }
 out.addEventListener('click',ev=>{const b=ev.target.closest('button[data-n]');if(b){inp.value=b.dataset.n;show(b.dataset.n)}});
 function show(v){
